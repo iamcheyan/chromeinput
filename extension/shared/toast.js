@@ -2,7 +2,7 @@
   'use strict';
   /**
    * chromeinput 应用级提示 (源仓铁律: 禁止 alert/confirm/prompt).
-   * 从 sbzr-core.js 移植: showAppToast / showAppConfirm / showCodeInputDialog.
+   * 由旧版核心脚本移植: showAppToast / showAppConfirm / showCodeInputDialog.
    * 样式沿用 content/style.css 的 .ci-ui-* 类.
    */
 
@@ -258,7 +258,7 @@
 
   /**
    * 快捷词入库: 弹码输入框 -> user.json 追加 [word, code, weight].
-   * 对标原 SBZRShared.promptAndSaveFixedEntry (native host 落盘改为 storage override).
+   * 对标原版 promptAndSaveFixedEntry (native host 落盘改为 storage override).
    */
   async function promptAndSaveShortcutEntry(selectedText, {
     afterSave,

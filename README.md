@@ -1,6 +1,6 @@
 # chromeinput
 
-Chrome 内嵌全拼中文输入法扩展（MV3，零依赖，从 sbzr/Veikin 双拼扩展重构移植而来）。
+Chrome 内嵌全拼中文输入法扩展（MV3，零依赖，由旧双拼方案重构移植而来）。
 
 ## 功能
 

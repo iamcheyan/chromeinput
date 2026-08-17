@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
   /**
-   * chromeinput 存储层 (原 sbzr-core.js 的存储部分瘦身移植).
+   * chromeinput 存储层 (由旧版核心脚本存储层瘦身移植).
    *
    * 键名统一 ci_ 前缀; 词库 overrides 沿用原扩展机制:
    * 打包文件为基底, 编辑结果以 override 存 chrome.storage.local.

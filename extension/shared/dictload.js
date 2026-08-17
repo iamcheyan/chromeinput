@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
   /**
-   * chromeinput 词库加载 + 索引构建 (原 sbzr-core fetchPackaged* / content.js loadDict 移植).
+   * chromeinput 词库加载 + 索引构建 (由旧版核心 fetchPackaged* / loadDict 移植).
    *
    * 数据流: 打包 JSON (或 storage override) -> 合并条目 -> CIEngine.buildIndex
    * 冷启动打点 console.time('CI:cold-start'); 条目缓存 chrome.storage.local,

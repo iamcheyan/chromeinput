@@ -23,7 +23,7 @@ LUNA_URL = ('https://raw.githubusercontent.com/rime/rime-luna-pinyin/'
             'master/luna_pinyin.dict.yaml')  # 注意分支是 master
 SIZE_BUDGET = 2.5 * 1024 * 1024
 
-# 权重基值 (对齐 sbzr reweight_dicts.py 习惯, GOAL §二)
+# 权重基值 (对齐源仓 reweight_dicts.py 习惯, GOAL §二)
 CHAR_BASE = 50014          # 无权重单字
 PHRASE_BASE = 1000         # 无权重词组 (字数不放大: 候选排序已有"字数短优先")
 USER_WEIGHT = 999999       # 用户资产置顶

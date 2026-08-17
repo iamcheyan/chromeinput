@@ -13,7 +13,7 @@
    */
 
   const MAX_CANDIDATES = 60;      // 单次查询候选上限 (10 页 x 6)
-  const MAX_USER_HISTORY = 12;    // 同码历史词条数 (沿用原 sbzr 上限)
+  const MAX_USER_HISTORY = 12;    // 同码历史词条数 (沿用原版上限)
 
   const state = {
     full: new Map(),
