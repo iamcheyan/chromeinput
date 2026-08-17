@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
   /**
-   * chromeinput content 装配 (原 content.js 的 installPageIme/installTextareaIME/
-   * installStorageSync/handleRuntimeMessage 移植; <200 行).
+   * chromeinput content 装配: installPageIme/installTextareaIME/runtime 消息路由.
+   * 中英开关在 keyhandler.js, storage 同步在 sync.js.
    */
   const Shared = global.CIShared;
   const CI = (global.CIContent = global.CIContent || {});
@@ -11,116 +11,16 @@
   CI.extensionEnabled = true;
   CI.focusedElement = null;
   let listenersInstalled = false;
-  let storageSyncInstalled = false;
   let messageListenerInstalled = false;
   let pagePreparationPromise = null;
-  let storageReadyPromise = null;
   let dictLoadPromise = null;
 
-  // ------------------------------------------------------------ 中英开关
-  function toggleMode() {
-    CI.extensionEnabled = !CI.extensionEnabled;
-    try {
-      if (chrome.runtime && chrome.runtime.id) {
-        chrome.storage.local.set({ [Shared.KEYS.ENABLED]: CI.extensionEnabled });
-      }
-    } catch (e) {
-      console.log('CI: Extension context invalidated, state not saved.');
-    }
-    if (!CI.extensionEnabled && CI.uiVisible) {
-      CI.ui.hideUI();
-      global.CIEngine.state.buffer = '';
-    }
-  }
+  // 中英开关/启用入口由 keyhandler.js 提供 (CI.toggleMode/enableIme/isImeActive)
 
-  function enableIme() {
-    if (CI.extensionEnabled) return;
-    CI.extensionEnabled = true;
-    try {
-      if (chrome.runtime && chrome.runtime.id) {
-        chrome.storage.local.set({ [Shared.KEYS.ENABLED]: true });
-      }
-    } catch (e) {
-      console.log('CI: Extension context invalidated, state not saved.');
-    }
-  }
-
-  CI.toggleMode = toggleMode;
-  CI.enableIme = enableIme;
-
-  CI.isImeActive = function () {
-    return CI.extensionEnabled && CI.siteRules.isCurrentPageEnabled();
+  // storage 同步由 content/sync.js 提供 (CI.sync.installStorageSync / CI.sync.ready)
+  CI.sync.onDictSourcesChanged = () => {
+    if (global.CIEngine.state.ready) return reloadDict();
   };
-
-  // ------------------------------------------------------------ storage 同步
-  function handleStorageChanged(changes) {
-    if (changes[Shared.KEYS.ENABLED]) {
-      CI.extensionEnabled = changes[Shared.KEYS.ENABLED].newValue !== false;
-      if (!CI.extensionEnabled && CI.uiVisible) {
-        CI.ui.hideUI();
-        global.CIEngine.state.buffer = '';
-      }
-    }
-    if (changes[Shared.KEYS.SITE_RULES]) {
-      void CI.siteRules.loadSiteRules().then(() => {
-        if (CI.uiVisible) CI.ui.renderUI();
-      });
-    }
-    if (changes[Shared.KEYS.PUNCTUATION_MODE]) {
-      CI.punctuationMode = changes[Shared.KEYS.PUNCTUATION_MODE].newValue === 'en' ? 'en' : 'cn';
-      if (CI.uiVisible) CI.ui.renderUI();
-    }
-    if (changes[Shared.KEYS.WIDTH_MODE]) {
-      CI.widthMode = changes[Shared.KEYS.WIDTH_MODE].newValue === 'full' ? 'full' : 'half';
-      if (CI.uiVisible) CI.ui.renderUI();
-    }
-    if (changes[Shared.KEYS.FONT_SIZE]) {
-      CI.fontSize = changes[Shared.KEYS.FONT_SIZE].newValue;
-      CI.ui.updateUIMode();
-    }
-    if (changes[Shared.KEYS.USER_HISTORY]) {
-      global.CIEngine.state.userHistory = changes[Shared.KEYS.USER_HISTORY].newValue || {};
-    }
-    if (changes[Shared.KEYS.UI_POS]) {
-      CI.manualPosition = changes[Shared.KEYS.UI_POS].newValue || null;
-    }
-    if (changes[Shared.KEYS.DICT_OVERRIDES] || changes[Shared.KEYS.DICT_PATHS]) {
-      // 未加载索引的页面首载时直接读最新数据
-      if (global.CIEngine.state.ready) void reloadDict();
-    }
-  }
-
-  function installStorageSync() {
-    if (storageSyncInstalled) return;
-    try {
-      if (!chrome.storage || !chrome.storage.local) return;
-      storageReadyPromise = new Promise((resolve) => {
-        chrome.storage.local.get([
-          Shared.KEYS.ENABLED,
-          Shared.KEYS.FONT_SIZE,
-          Shared.KEYS.UI_POS,
-          Shared.KEYS.SITE_RULES,
-          Shared.KEYS.PUNCTUATION_MODE,
-          Shared.KEYS.WIDTH_MODE,
-          Shared.KEYS.USER_HISTORY
-        ], (result) => {
-          CI.extensionEnabled = result[Shared.KEYS.ENABLED] !== false;
-          if (result[Shared.KEYS.FONT_SIZE]) CI.fontSize = result[Shared.KEYS.FONT_SIZE];
-          if (result[Shared.KEYS.UI_POS]) CI.manualPosition = result[Shared.KEYS.UI_POS];
-          if (result[Shared.KEYS.PUNCTUATION_MODE] === 'en') CI.punctuationMode = 'en';
-          if (result[Shared.KEYS.WIDTH_MODE] === 'full') CI.widthMode = 'full';
-          global.CIEngine.state.userHistory = result[Shared.KEYS.USER_HISTORY] || {};
-          CI.siteRules.evaluateCurrentPageEnabled();
-          CI.ui.updateUIMode();
-          resolve();
-        });
-      });
-      chrome.storage.onChanged.addListener(handleStorageChanged);
-      storageSyncInstalled = true;
-    } catch (e) {
-      console.log('CI: Initial storage sync failed (context invalidated).');
-    }
-  }
 
   // ------------------------------------------------------------ 词库加载
   async function loadDict() {
@@ -153,7 +53,7 @@
     if (pagePreparationPromise) return pagePreparationPromise;
     pagePreparationPromise = (async () => {
       // 普通页面保持轻量: UI 创建与词库解析都推迟到首次聚焦编辑器.
-      await (storageReadyPromise || Promise.resolve());
+      await (CI.sync.ready || Promise.resolve());
       if (!CI.isImeActive()) return;
       CI.ui.injectUI();
       await loadDict();
@@ -241,7 +141,7 @@
     CI.runtimeMode = 'page';
     CI.keys.setManagedTarget(null);
     CI.keys.setSuppressionCheck(null);
-    installStorageSync();
+    CI.sync.installStorageSync();
     installRuntimeMessageListener();
     installRuntimeListeners();
   }
@@ -253,7 +153,7 @@
     CI.runtimeMode = 'target';
     CI.keys.setManagedTarget(options.target);
     CI.keys.setSuppressionCheck(typeof options.isSuppressed === 'function' ? options.isSuppressed : null);
-    installStorageSync();
+    CI.sync.installStorageSync();
     installRuntimeListeners();
     CI.ui.injectUI();
     void loadDict();

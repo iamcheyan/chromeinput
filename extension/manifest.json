@@ -38,6 +38,7 @@
         "content/committer.js",
         "content/ui.js",
         "content/siterules.js",
+        "content/sync.js",
         "content/keyhandler.js",
         "content/main.js"
       ],

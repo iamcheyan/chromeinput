@@ -5,6 +5,7 @@
    * 双拼 3/4 码顶功规则不适用于全拼, 已移除 -- 见 docs/REFACTOR_NOTES.md).
    */
   const CI = (global.CIContent || {});
+  const Shared = global.CIShared;
 
   let shiftPressedOnly = false;
   let managedTarget = null;
@@ -312,7 +313,42 @@
     }
   }
 
+  // ------------------------------------------------------------ 中英开关
+  function toggleMode() {
+    CI.extensionEnabled = !CI.extensionEnabled;
+    try {
+      if (chrome.runtime && chrome.runtime.id) {
+        chrome.storage.local.set({ [Shared.KEYS.ENABLED]: CI.extensionEnabled });
+      }
+    } catch (e) {
+      console.log('CI: Extension context invalidated, state not saved.');
+    }
+    if (!CI.extensionEnabled && CI.uiVisible) {
+      CI.ui.hideUI();
+      global.CIEngine.state.buffer = '';
+    }
+  }
+
+  function enableIme() {
+    if (CI.extensionEnabled) return;
+    CI.extensionEnabled = true;
+    try {
+      if (chrome.runtime && chrome.runtime.id) {
+        chrome.storage.local.set({ [Shared.KEYS.ENABLED]: true });
+      }
+    } catch (e) {
+      console.log('CI: Extension context invalidated, state not saved.');
+    }
+  }
+
+  CI.toggleMode = toggleMode;
+  CI.enableIme = enableIme;
+  CI.isImeActive = function () {
+    return CI.extensionEnabled && CI.siteRules.isCurrentPageEnabled();
+  };
+
   CI.keys = {
+
     handleDocumentKeyDown,
     handleDocumentKeyUp,
     handleShiftTrackingKeyDown,

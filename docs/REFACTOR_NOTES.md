@@ -15,6 +15,7 @@
 | 〃 | `extension/content/committer.js` | commit() 照抄：input 走 value 拼接 + input/change 事件；contenteditable 走 execCommand('insertText') 失败回退 range.insertNode + InputEvent |
 | 〃 | `extension/content/ui.js` | 候选条照抄：Shadow DOM、头部拖拽、中英标点/全半角按钮、PAGE_SIZE=6 三行展开、Alt+F 记事本、Shift 单击切中英 |
 | 〃 | `extension/content/siterules.js` | 站点开关（enabled/全局禁用名单） |
+| 〃 | `extension/content/sync.js` | storage 同步（ci_* 键启动读取 + onChanged 增量同步）；从 main.js 拆出以满足 main.js <200 行 |
 | 〃 | `extension/content/style.css` | 克隆样式，id 前缀 `sbzr-ime-*` → `ci-ime-*` |
 | `shared/sbzr-core.js` | `extension/shared/storage.js` | `CIShared`：存储键全部改 `ci_` 前缀；dict override 机制、userHistory（maxEntries=12）、快捷词写 user.json override |
 | 〃 | `extension/shared/config.js` | `CI_DICTS`：TABLES/DEFAULT_PATHS/EDITOR_PATHS（仅 user.json 可编辑） |
@@ -104,14 +105,15 @@
 6. **editor `readPackagedDictText` → `readDictResource`**：API 更名适配新 storage.js（移植期曾漏改 2 处调用点，ED2 抓出）。
 7. **console.error 保留 5 处**：均为异常路径（词库加载/保存/打开失败），正常流程零输出（C15 双 harness 验证）。
 8. **SarasaMonoSC 25MB 字体不移植**（GOAL §四强制），编辑器用系统等宽栈。
-9. **notepad → editor 目录更名**，logo 461KB 不入仓。
+9. **notepad → editor 目录更名**，logo 461KB 不入仓；`.veikin-logo` 死 CSS 已删。
+10. **引擎 JIT 预热**：索引构建完成后跑 12 个代表性查询（单字母/声母/全拼/简拼），强制编译热路径——否则首键偶发 5.7ms 编译停顿（>5ms 验收线）；预热计入 cold-start 预算（余量 >300ms），perf 计数随后清零。
 
 ## 五、性能实测（Xvfb + Chrome for Testing + playwright-core）
 
-| 指标 | 验收线 | 实测 |
+| 指标 | 验收线 | 实测（3 连跑） |
 |---|---|---|
-| 冷启动建索引（CI:cold-start） | ≤800ms | **391ms** |
-| 单键出候选最大耗时 | ≤5ms | **3.80ms**（连续 56 键） |
+| 冷启动建索引（CI:cold-start） | ≤800ms | **389 / 412 / 466ms** |
+| 单键出候选最大耗时 | ≤5ms | **0.2 / 0.3 / 0.2ms**（JIT 预热后；预热前首键偶发 5.7ms 编译停顿，见 §四.10） |
 | dicts 体积（UTF-8 字节） | ≤2.5MB | **2.40MB**（97240+34 条） |
 | 编辑器 1 万行载入 | — | ~120ms；拖动滚动 maxFrameGap 4.9ms |
 | 行号虚拟渲染 | — | 视口 28-37 行 DOM，滚动重算 |

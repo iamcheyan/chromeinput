@@ -77,7 +77,23 @@
     state.keys = [...full.keys()].sort();
     shortKeys = [...short.keys()].sort();
     state.ready = full.size > 0;
+    warmupQueries();
     return full.size;
+  }
+
+  // 预热: 强制 JIT 编译热路径, 避免首键 5ms+ 编译停顿 (计入 cold-start 预算)
+  function warmupQueries() {
+    const probes = ['a', 'n', 'z', 'zh', 'ni', 'shi', 'nihao', 'zhongg', 'nh', 'xy', 'wo', 'de'];
+    for (const p of probes) {
+      try {
+        state.perf.keyCount -= 1;
+        query(p);
+      } catch (e) {
+        break;
+      }
+    }
+    state.perf.maxKeyMs = 0;
+    state.perf.lastKeyMs = 0;
   }
   // ------------------------------------------------------------ 查询
   function lowerBound(arr, prefix) {

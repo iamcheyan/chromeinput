@@ -45,6 +45,7 @@ const CONTENT_IME_SCRIPT_CHAIN = [
   ['../content/committer.js', 'CIContent'],
   ['../content/ui.js', 'CIContent'],
   ['../content/siterules.js', 'CIContent'],
+  ['../content/sync.js', 'CIContent'],
   ['../content/keyhandler.js', 'CIContent'],
   ['../content/main.js', 'CIContentIME']
 ];
