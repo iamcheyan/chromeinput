@@ -1,0 +1,72 @@
+{
+  "manifest_version": 3,
+  "name": "chromeinput",
+  "version": "0.1.0",
+  "description": "Chrome 全拼输入法扩展 (chromeinput), 词库编辑器 Nova Editor 内置.",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "contextMenus"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "add-selection-to-dict": {
+      "suggested_key": {
+        "default": "Alt+Shift+A",
+        "mac": "Command+Shift+A"
+      },
+      "description": "Add selected text to user dictionary"
+    }
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "shared/config.js",
+        "shared/storage.js",
+        "shared/toast.js",
+        "shared/dictload.js",
+        "content/engine.js",
+        "content/committer.js",
+        "content/ui.js",
+        "content/siterules.js",
+        "content/keyhandler.js",
+        "content/main.js"
+      ],
+      "css": [
+        "content/style.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content/style.css",
+        "popup/popup.html",
+        "popup/popup.js",
+        "dicts/*.json",
+        "editor/index.html",
+        "editor/styles.css",
+        "editor/script.js",
+        "shared/config.js",
+        "shared/storage.js",
+        "shared/toast.js",
+        "shared/dictload.js",
+        "shared/highlighter.js",
+        "shared/vim-mode.js",
+        "content/*.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
