@@ -66,7 +66,7 @@
 | 源表 | yuan biao | yrbc | 原双拼码（远 yr + 表 bc） |
 | python | — | py | 非中文，原码 |
 | vscode | — | vs | 非中文，原码 |
-| REDACTED 等 3 邮箱 | — | umail | 非中文，共用原码 |
+| 个人邮箱等 3 条(已移出公开仓)等 3 邮箱 | — | umail | 非中文，共用原码 |
 | 以上内容用日语表达…（38 字） | yi shang nei rong … | uy | 多音字修正：内=nei（原文 nei） |
 | 短暂思考过后直接干活… | duan zan si kao … | ugh | 死循环 si xun huan 按原文本 |
 | 可以 | ke yi | ky | 肌肉记忆 |
