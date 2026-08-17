@@ -251,6 +251,71 @@
     if (uiRoot) uiRoot.style.display = 'none';
   }
 
+  // ------------------------------------------------------------ 光标跟随定位
+  // 镜像 div 法测 input/textarea 光标像素位置; contenteditable 用 Range rect.
+  // 返回 null 表示无法测得(回到元素整体锚定兜底).
+  function measureCaretRect(el) {
+    if (!el) return null;
+    try {
+      if (el.isContentEditable) {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return null;
+        const range = sel.getRangeAt(0).cloneRange();
+        let rect = range.getBoundingClientRect();
+        if (rect && (rect.top !== 0 || rect.left !== 0) && rect.height >= 0) {
+          if (rect.height === 0) rect = { top: rect.top, bottom: rect.top + 16, left: rect.left, width: rect.width || 0 };
+          return { left: rect.left, top: rect.top, bottom: rect.bottom };
+        }
+        // 空内容时 range rect 可能为 0, 落回元素锚定
+        return null;
+      }
+      const tag = (el.tagName || '').toLowerCase();
+      if (tag !== 'input' && tag !== 'textarea') return null;
+      const style = window.getComputedStyle(el);
+      const mirror = document.createElement('div');
+      const props = 'boxSizing,width,paddingTop,paddingRight,paddingBottom,paddingLeft,' +
+        'borderTopWidth,borderRightWidth,borderBottomWidth,borderLeftWidth,' +
+        'fontFamily,fontSize,fontWeight,fontStyle,letterSpacing,lineHeight,textTransform,wordSpacing,textIndent,whiteSpace,wordWrap,wordBreak,overflowWrap,tabSize';
+      for (const p of props.split(',')) {
+        try { mirror.style[p] = style[p]; } catch (e) { /* readOnly props */ }
+      }
+      mirror.style.position = 'absolute';
+      mirror.style.visibility = 'hidden';
+      mirror.style.left = '-9999px';
+      mirror.style.top = '0';
+      if (tag === 'textarea') mirror.style.whiteSpace = 'pre-wrap';
+      else if (el.type === 'password') return null; // 密码框不测光标
+      else mirror.style.whiteSpace = 'nowrap';
+      const pos = el.selectionStart;
+      if (pos == null) return null;
+      const before = el.value.slice(0, pos);
+      const after = el.value.slice(pos);
+      mirror.textContent = before; // 浏览器自动转义文本节点, 无注入风险
+      const marker = document.createElement('span');
+      marker.textContent = after ? after[0] : '.';
+      marker.style.display = 'inline-block';
+      marker.style.width = '0';
+      marker.style.height = '1em';
+      marker.style.verticalAlign = 'baseline';
+      mirror.appendChild(marker);
+      const tail = document.createElement('span');
+      tail.textContent = '';
+      mirror.appendChild(tail);
+      document.body.appendChild(mirror);
+      const mRect = mirror.getBoundingClientRect();
+      const kRect = marker.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      document.body.removeChild(mirror);
+      return {
+        left: elRect.left + (kRect.left - mRect.left),
+        top: elRect.top + Math.max(0, kRect.top - mRect.top),
+        bottom: elRect.top + Math.max(0, kRect.bottom - mRect.top)
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
   function positionUI() {
     if (!uiRoot) return;
     const focusedElement = CI.focusedElement;
@@ -261,13 +326,21 @@
     }
     if (draggingUI) return;
     if (applyManualPosition()) return;
-    const rect = focusedElement.getBoundingClientRect();
-    let top = rect.bottom + 10;
-    let left = rect.left;
+    // 优先: 光标跟随 (可被站点规则/配置关闭)
+    const caret = (CI.caretFollow !== false) ? measureCaretRect(focusedElement) : null;
+    let anchor;
+    if (caret) {
+      anchor = { left: caret.left, bottom: caret.bottom + 2, top: caret.top };
+    } else {
+      const rect = focusedElement.getBoundingClientRect();
+      anchor = { left: rect.left, bottom: rect.bottom, top: rect.top };
+    }
+    let top = anchor.bottom + 6;
+    let left = anchor.left;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    if (left + 320 > vw) left = vw - 340;
-    if (top + 200 > vh) top = rect.top - 180;
+    if (left + 320 > vw) left = Math.max(10, vw - 340);
+    if (top + 200 > vh) top = Math.max(10, anchor.top - 190);
     uiRoot.style.left = `${Math.max(10, left)}px`;
     uiRoot.style.top = `${Math.max(10, top)}px`;
   }

@@ -40,7 +40,7 @@ await new Promise((r) => server.listen(8931, '127.0.0.1', r));
 const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-profile-'));
 const browser = await chromium.launchPersistentContext(userDataDir, {
   headless: false,
-  executablePath: '~/.local/bin/google-chrome',
+  executablePath: process.env.CHROME_BIN || `${os.homedir()}/.local/bin/google-chrome`,
   args: [
     `--disable-extensions-except=${EXT_DIR}`,
     `--load-extension=${EXT_DIR}`,
